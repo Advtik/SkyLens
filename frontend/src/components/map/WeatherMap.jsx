@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import { useUIStore } from '../../store/useUIStore'
 import { useWeatherStore } from '../../store/useWeatherStore'
@@ -19,7 +19,12 @@ export default function WeatherMap() {
   const coordinates = useWeatherStore((state) => state.coordinates)
   const weather = useWeatherStore((state) => state.weather)
   const activeMapLayer = useUIStore((state) => state.activeMapLayer)
+  const [overlayError, setOverlayError] = useState(false)
   const center = coordinates ? [coordinates.lat, coordinates.lon] : [20, 0]
+
+  useEffect(() => {
+    setOverlayError(false)
+  }, [activeMapLayer])
 
   return (
     <section className="glass-card overflow-hidden rounded-xl p-3">
@@ -42,6 +47,7 @@ export default function WeatherMap() {
               url={`https://tile.openweathermap.org/map/${activeMapLayer}/{z}/{x}/{y}.png?appid=${OWM_KEY}`}
               opacity={1}
               zIndex={10}
+              eventHandlers={{ tileerror: () => setOverlayError(true) }}
             />
           )}
           <MapCenterUpdater center={center} />
@@ -53,8 +59,12 @@ export default function WeatherMap() {
             Add VITE_OWM_KEY to show weather tile overlays.
           </div>
         )}
+        {OWM_KEY && overlayError && (
+          <div className="absolute inset-x-3 top-3 z-[900] rounded-xl border border-amber-400/30 bg-amber-950/80 px-3 py-2 text-xs font-semibold text-amber-100 backdrop-blur md:left-3 md:right-auto">
+            Weather overlay tiles were rejected. Check that VITE_OWM_KEY is valid and activated for OpenWeatherMap map tiles.
+          </div>
+        )}
       </div>
     </section>
   )
 }
-

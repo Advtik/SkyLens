@@ -5,6 +5,7 @@ import { useWeatherStore } from '../../store/useWeatherStore'
 import { getHeroClass } from '../../utils/colorScales'
 import { convertTemp, formatTimestamp, tempUnitSymbol } from '../../utils/formatters'
 import WeatherIcon from '../common/WeatherIcon'
+import FavoriteToggle from '../favorites/FavoriteToggle'
 
 export default function WeatherHero() {
   const weather = useWeatherStore((state) => state.weather)
@@ -52,6 +53,7 @@ export default function WeatherHero() {
               <RefreshCcw className="h-4 w-4" />
               Refresh
             </button>
+            <FavoriteToggle />
           </div>
         </div>
         <WeatherIcon icon={weather.condition_icon} condition={weather.condition} />
@@ -59,4 +61,3 @@ export default function WeatherHero() {
     </motion.section>
   )
 }
-

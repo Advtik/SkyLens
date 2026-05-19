@@ -1,13 +1,21 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { CloudSun } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import AdvisoryPanel from './components/advisory/AdvisoryPanel'
 import ErrorBanner from './components/common/ErrorBanner'
 import LoadingSkeleton from './components/common/LoadingSkeleton'
 import SearchBar from './components/common/SearchBar'
+import DisasterBanner from './components/disaster/DisasterBanner'
+import FavoritesPanel, { FavoritesButton } from './components/favorites/FavoritesPanel'
 import ForecastSection from './components/forecast/ForecastSection'
+import VoiceAssistant from './components/voice/VoiceAssistant'
+import VoiceButton from './components/voice/VoiceButton'
 import HourlyStrip from './components/weather/HourlyStrip'
 import MetricsGrid from './components/weather/MetricsGrid'
 import WeatherHero from './components/weather/WeatherHero'
+import useAdvisory from './hooks/useAdvisory'
+import useDisaster from './hooks/useDisaster'
+import { useFavoritesStore } from './store/useFavoritesStore'
 import { useWeatherStore } from './store/useWeatherStore'
 
 const WeatherMap = lazy(() => import('./components/map/WeatherMap'))
@@ -25,7 +33,13 @@ function Header() {
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Weather Analytics</p>
           </div>
         </div>
-        <SearchBar />
+        <div className="flex w-full flex-col gap-3 md:flex-1 md:flex-row md:items-center md:justify-end">
+          <SearchBar />
+          <div className="flex justify-end gap-2">
+            <FavoritesButton />
+            <VoiceButton />
+          </div>
+        </div>
       </div>
     </header>
   )
@@ -55,7 +69,7 @@ function LandingHero() {
           <p className="text-sm font-bold uppercase tracking-widest text-white/80">Preview</p>
           <div className="mt-12 flex items-end justify-between">
             <div>
-              <p className="text-7xl font-black">28°C</p>
+              <p className="text-7xl font-black">28C</p>
               <p className="mt-2 text-xl font-bold">Clear sky</p>
             </div>
             <CloudSun className="h-28 w-28 text-white/90" />
@@ -74,7 +88,7 @@ function Dashboard() {
       variants={{ show: { transition: { staggerChildren: 0.08 } } }}
       className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-8 md:py-10"
     >
-      {[WeatherHero, MetricsGrid, HourlyStrip, ForecastSection].map((Component, index) => (
+      {[WeatherHero, MetricsGrid, HourlyStrip, ForecastSection, AdvisoryPanel].map((Component, index) => (
         <motion.div key={index} variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }}>
           <Component />
         </motion.div>
@@ -92,14 +106,20 @@ export default function App() {
   const weather = useWeatherStore((state) => state.weather)
   const loading = useWeatherStore((state) => state.loading)
   const setCity = useWeatherStore((state) => state.setCity)
+  const refreshFavorites = useFavoritesStore((state) => state.refreshAll)
+
+  useAdvisory()
+  useDisaster()
 
   useEffect(() => {
     setCity('Delhi')
-  }, [setCity])
+    refreshFavorites()
+  }, [setCity, refreshFavorites])
 
   return (
     <div className="min-h-screen">
       <Header />
+      <DisasterBanner />
       <div className="px-4 pt-4">
         <ErrorBanner />
       </div>
@@ -117,7 +137,8 @@ export default function App() {
       <footer className="border-t border-white/10 px-4 py-5 text-center text-xs text-slate-500">
         Data by OpenWeatherMap, Open-Meteo, and OpenStreetMap.
       </footer>
+      <FavoritesPanel />
+      <VoiceAssistant />
     </div>
   )
 }
-
