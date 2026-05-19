@@ -1,6 +1,7 @@
 import asyncio
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import ValidationError
 
 from app.schemas.weather import WeatherResponse
 from app.services import cache, openmeteo_service, owm_service
@@ -13,7 +14,10 @@ async def get_weather(city: str = Query(..., min_length=2)) -> WeatherResponse:
     cache_key = f"weather:{city.strip().lower()}"
     cached = cache.get_cached(cache_key)
     if cached:
-        return WeatherResponse(**cached)
+        try:
+            return WeatherResponse(**cached)
+        except ValidationError:
+            cache.delete_cached(cache_key)
 
     try:
         current = await owm_service.get_current_weather(city)
@@ -28,4 +32,3 @@ async def get_weather(city: str = Query(..., min_length=2)) -> WeatherResponse:
         raise
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Weather service unavailable: {exc}") from exc
-

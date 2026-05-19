@@ -9,6 +9,7 @@ from app.services import openmeteo_service
 from app.services.weather_codes import aqi_label
 
 OWM_BASE = "https://api.openweathermap.org"
+AUTH_FAILURE_STATUSES = {401, 403}
 
 
 async def _get_json(path: str, params: dict) -> dict:
@@ -22,11 +23,49 @@ async def _get_json(path: str, params: dict) -> dict:
     return response.json()
 
 
+def _is_auth_failure(exc: Exception) -> bool:
+    return isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code in AUTH_FAILURE_STATUSES
+
+
+async def _forecast_fallback(city: str, days: int = 7) -> dict:
+    location = await openmeteo_service.geocode_city(city)
+    hourly = await openmeteo_service.get_hourly(location["lat"], location["lon"], hours=days * 24)
+    daily = defaultdict(list)
+    for point in hourly:
+        daily[datetime.fromtimestamp(point.timestamp).date().isoformat()].append(point)
+    return {
+        "city": location["city"],
+        "lat": location["lat"],
+        "lon": location["lon"],
+        "daily": [
+            {
+                "date": date_key,
+                "temp_max_c": max(p.temp_c for p in points),
+                "temp_min_c": min(p.temp_c for p in points),
+                "humidity_avg": round(sum(p.humidity for p in points) / len(points)),
+                "wind_speed_avg": round(sum(p.wind_speed_ms for p in points) / len(points), 1),
+                "precipitation_mm": round(sum(p.precipitation_mm for p in points), 1),
+                "cloud_cover_avg": round(sum(p.cloud_cover_pct for p in points) / len(points)),
+                "aqi_avg": None,
+                "uv_max": max((p.uv_index or 0) for p in points),
+                "condition": "Forecast",
+                "condition_icon": points[0].condition_icon,
+            }
+            for date_key, points in list(daily.items())[:days]
+        ],
+    }
+
+
 async def get_current_weather(city: str) -> dict:
     if not settings.owm_api_key:
         return await openmeteo_service.get_current_fallback(city)
 
-    data = await _get_json("/data/2.5/weather", {"q": city, "units": "metric"})
+    try:
+        data = await _get_json("/data/2.5/weather", {"q": city, "units": "metric"})
+    except Exception as exc:
+        if _is_auth_failure(exc):
+            return await openmeteo_service.get_current_fallback(city)
+        raise
     weather = (data.get("weather") or [{}])[0]
     main = data.get("main", {})
     wind = data.get("wind", {})
@@ -57,7 +96,12 @@ async def get_aqi(lat: float, lon: float) -> dict:
     if not settings.owm_api_key:
         return {"aqi": 2, "aqi_label": "Fair", "pm25": None, "pm10": None}
 
-    data = await _get_json("/data/2.5/air_pollution", {"lat": lat, "lon": lon})
+    try:
+        data = await _get_json("/data/2.5/air_pollution", {"lat": lat, "lon": lon})
+    except Exception as exc:
+        if _is_auth_failure(exc):
+            return {"aqi": 2, "aqi_label": "Fair", "pm25": None, "pm10": None}
+        raise
     item = (data.get("list") or [{}])[0]
     aqi = int((item.get("main") or {}).get("aqi", 1))
     components = item.get("components") or {}
@@ -71,34 +115,14 @@ async def get_aqi(lat: float, lon: float) -> dict:
 
 async def get_forecast(city: str, days: int = 7) -> dict:
     if not settings.owm_api_key:
-        location = await openmeteo_service.geocode_city(city)
-        hourly = await openmeteo_service.get_hourly(location["lat"], location["lon"], hours=days * 24)
-        daily = defaultdict(list)
-        for point in hourly:
-            daily[datetime.fromtimestamp(point.timestamp).date().isoformat()].append(point)
-        return {
-            "city": location["city"],
-            "lat": location["lat"],
-            "lon": location["lon"],
-            "daily": [
-                {
-                    "date": date_key,
-                    "temp_max_c": max(p.temp_c for p in points),
-                    "temp_min_c": min(p.temp_c for p in points),
-                    "humidity_avg": round(sum(p.humidity for p in points) / len(points)),
-                    "wind_speed_avg": round(sum(p.wind_speed_ms for p in points) / len(points), 1),
-                    "precipitation_mm": round(sum(p.precipitation_mm for p in points), 1),
-                    "cloud_cover_avg": round(sum(p.cloud_cover_pct for p in points) / len(points)),
-                    "aqi_avg": None,
-                    "uv_max": max((p.uv_index or 0) for p in points),
-                    "condition": "Forecast",
-                    "condition_icon": points[0].condition_icon,
-                }
-                for date_key, points in list(daily.items())[:days]
-            ],
-        }
+        return await _forecast_fallback(city, days)
 
-    data = await _get_json("/data/2.5/forecast", {"q": city, "units": "metric"})
+    try:
+        data = await _get_json("/data/2.5/forecast", {"q": city, "units": "metric"})
+    except Exception as exc:
+        if _is_auth_failure(exc):
+            return await _forecast_fallback(city, days)
+        raise
     grouped = defaultdict(list)
     for item in data.get("list", []):
         grouped[item["dt_txt"].split(" ")[0]].append(item)
@@ -126,4 +150,3 @@ async def get_forecast(city: str, days: int = 7) -> dict:
         "lon": float(data["city"]["coord"]["lon"]),
         "daily": daily,
     }
-
