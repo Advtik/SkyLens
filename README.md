@@ -95,7 +95,7 @@ Use the included `render.yaml` blueprint from the repository root, or create a R
 ```text
 Root Directory: backend
 Runtime: Python
-Build Command: pip install --upgrade pip && pip install -r requirements.txt
+Build Command: python --version && python -m pip install --upgrade pip setuptools wheel && python -m pip install -r requirements.txt
 Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 Health Check Path: /api/health
 ```
@@ -113,6 +113,8 @@ REQUEST_TIMEOUT=12
 CACHE_TTL_SECONDS=600
 DISASTER_CACHE_TTL_SECONDS=300
 ```
+
+The backend includes `.python-version` and `runtime.txt` files pinned to Python 3.11.9. If Render logs show Python 3.14 or another version during install, set `PYTHON_VERSION=3.11.9` manually in the Render dashboard and trigger a clear-cache redeploy.
 
 After Render gives you a backend URL, confirm `https://your-render-service.onrender.com/api/health` returns `{"status":"ok"}`.
 
