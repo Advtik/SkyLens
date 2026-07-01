@@ -3,8 +3,8 @@ services:
     name: skylens-backend
     runtime: python
     rootDir: backend
-    buildCommand: python --version && python -m pip install --upgrade pip setuptools wheel && python -m pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: python --version && python -m pip install --upgrade pip setuptools wheel && if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; else python -m pip install -r backend/requirements.txt; fi
+    startCommand: if [ -d app ]; then uvicorn app.main:app --host 0.0.0.0 --port $PORT; else PYTHONPATH=backend uvicorn app.main:app --host 0.0.0.0 --port $PORT; fi
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
