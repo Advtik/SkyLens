@@ -21,6 +21,7 @@ export default function AdvisoryPanel() {
         <div>
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-300"><GraduationCap className="h-4 w-4" /> School & College Advisory</p>
           <h2 className="mt-1 text-2xl font-bold text-white">Attendance and commute intelligence</h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate-400">Risk scores estimate how strongly the forecast may disrupt school, college, commute, or outdoor activity. Green is low, yellow is watch, orange is caution, red is avoid/act.</p>
         </div>
         {advisory && <span className={`rounded-full px-3 py-1.5 text-xs font-black ${badgeClass[advisory.overall_risk]}`}>{advisory.overall_risk} RISK</span>}
       </div>
@@ -30,4 +31,3 @@ export default function AdvisoryPanel() {
     </section>
   )
 }
-

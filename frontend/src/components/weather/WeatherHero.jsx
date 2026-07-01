@@ -9,11 +9,15 @@ import FavoriteToggle from '../favorites/FavoriteToggle'
 
 export default function WeatherHero() {
   const weather = useWeatherStore((state) => state.weather)
+  const today = useWeatherStore((state) => state.forecast?.daily?.[0])
   const setCity = useWeatherStore((state) => state.setCity)
   const tempUnit = useUIStore((state) => state.tempUnit)
   const toggleTempUnit = useUIStore((state) => state.toggleTempUnit)
 
   if (!weather) return null
+  const dayMin = today?.temp_min_c ?? weather.temp_min_c
+  const dayMax = today?.temp_max_c ?? weather.temp_max_c
+  const rangeText = dayMin === dayMax ? `near ${convertTemp(weather.temp_c, tempUnit)}${tempUnitSymbol(tempUnit)}` : `from ${convertTemp(dayMin, tempUnit)}${tempUnitSymbol(tempUnit)} to ${convertTemp(dayMax, tempUnit)}${tempUnitSymbol(tempUnit)}`
 
   return (
     <motion.section
@@ -41,9 +45,7 @@ export default function WeatherHero() {
           </h1>
           <p className="mt-3 text-xl font-bold capitalize">{weather.description}</p>
           <p className="mt-2 max-w-xl text-sm text-white/80">
-            Today ranges from {convertTemp(weather.temp_min_c, tempUnit)}
-            {tempUnitSymbol(tempUnit)} to {convertTemp(weather.temp_max_c, tempUnit)}
-            {tempUnitSymbol(tempUnit)} with {weather.cloud_cover_pct}% cloud cover.
+            Today ranges {rangeText} with {weather.cloud_cover_pct}% cloud cover.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button type="button" onClick={toggleTempUnit} className="rounded-xl bg-white/15 px-4 py-2 text-sm font-bold backdrop-blur hover:bg-white/25" aria-label="Toggle temperature unit">

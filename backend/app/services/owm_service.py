@@ -113,6 +113,27 @@ async def get_aqi(lat: float, lon: float) -> dict:
     }
 
 
+async def get_aqi_forecast(lat: float, lon: float) -> dict[str, float]:
+    if not settings.owm_api_key:
+        return {}
+
+    try:
+        data = await _get_json("/data/2.5/air_pollution/forecast", {"lat": lat, "lon": lon})
+    except Exception as exc:
+        if _is_auth_failure(exc):
+            return {}
+        raise
+
+    grouped = defaultdict(list)
+    for item in data.get("list", []):
+        date_key = datetime.fromtimestamp(int(item["dt"])).date().isoformat()
+        aqi = int((item.get("main") or {}).get("aqi", 0))
+        if aqi:
+            grouped[date_key].append(aqi)
+
+    return {date_key: round(sum(values) / len(values), 1) for date_key, values in grouped.items() if values}
+
+
 async def get_forecast(city: str, days: int = 7) -> dict:
     if not settings.owm_api_key:
         return await _forecast_fallback(city, days)

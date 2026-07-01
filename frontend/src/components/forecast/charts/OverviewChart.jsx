@@ -9,7 +9,7 @@ export default function OverviewChart() {
   const daily = useWeatherStore((state) => state.forecast?.daily ?? [])
   const data = daily.map((day) => ({
     date: formatDate(day.date),
-    Temperature: day.temp_max_c,
+    'Max temp': day.temp_max_c,
     Precipitation: day.precipitation_mm,
     Humidity: day.humidity_avg,
   }))
@@ -21,11 +21,10 @@ export default function OverviewChart() {
         <XAxis dataKey="date" tick={{ fill: '#94A3B8', fontSize: 11 }} />
         <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} />
         <Tooltip content={<CustomTooltip />} />
-        <Area type="monotone" dataKey="Temperature" fill={CHART_COLORS.blue} fillOpacity={0.2} stroke={CHART_COLORS.blue} strokeWidth={3} />
+        <Area type="monotone" dataKey="Max temp" fill={CHART_COLORS.blue} fillOpacity={0.2} stroke={CHART_COLORS.blue} strokeWidth={3} />
         <Bar dataKey="Precipitation" fill={CHART_COLORS.cyan} radius={[6, 6, 0, 0]} />
         <Line type="monotone" dataKey="Humidity" stroke={CHART_COLORS.amber} strokeWidth={2} dot={{ r: 4 }} />
       </ComposedChart>
     </ChartWrapper>
   )
 }
-

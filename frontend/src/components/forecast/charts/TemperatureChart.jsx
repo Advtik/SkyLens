@@ -11,7 +11,8 @@ export default function TemperatureChart({ mlConfidence }) {
     date: formatDate(day.date),
     'Official Max': day.temp_max_c,
     'Official Min': day.temp_min_c,
-    'ML Predicted': day.temp_ml_predicted,
+    'ML Max': day.temp_ml_max_predicted ?? day.temp_ml_predicted,
+    'ML Min': day.temp_ml_min_predicted ?? day.temp_ml_predicted,
   }))
 
   return (
@@ -25,10 +26,11 @@ export default function TemperatureChart({ mlConfidence }) {
           <Legend wrapperStyle={{ color: '#CBD5E1' }} />
           <Line type="monotone" dataKey="Official Max" stroke={CHART_COLORS.blue} strokeWidth={3} dot={{ r: 4 }} />
           <Line type="monotone" dataKey="Official Min" stroke={CHART_COLORS.sky} strokeWidth={2} strokeDasharray="4 2" dot={{ r: 4 }} />
-          <Line type="monotone" dataKey="ML Predicted" stroke={CHART_COLORS.amber} strokeWidth={3} strokeDasharray="6 3" dot={{ r: 4, fill: CHART_COLORS.amber }} />
+          <Line type="monotone" dataKey="ML Max" stroke={CHART_COLORS.amber} strokeWidth={3} strokeDasharray="6 3" dot={{ r: 4, fill: CHART_COLORS.amber }} />
+          <Line type="monotone" dataKey="ML Min" stroke={CHART_COLORS.green} strokeWidth={2} strokeDasharray="6 3" dot={{ r: 4, fill: CHART_COLORS.green }} />
         </LineChart>
       </ChartWrapper>
-      <p className="mt-3 text-sm text-slate-400">RandomForest trend confidence: {Math.round((mlConfidence || 0) * 100)}%</p>
+      <p className="mt-3 text-sm text-slate-400">ML trend overlay confidence: {Math.round((mlConfidence || 0) * 100)}%. Official forecast remains the primary weather source.</p>
     </div>
   )
 }

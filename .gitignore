@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.vercel/
 .env
 .env.local
 venv/
@@ -9,4 +10,3 @@ __pycache__/
 .DS_Store
 backend/app/ml/models/*.pkl
 !backend/app/ml/models/.gitkeep
-

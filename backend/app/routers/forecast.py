@@ -20,9 +20,10 @@ async def get_forecast(city: str = Query(..., min_length=2), days: int = Query(7
         official = await owm_service.get_forecast(city, days=days)
         historical_task = openmeteo_service.get_historical(official["lat"], official["lon"], days=45)
         hourly_task = openmeteo_service.get_hourly(official["lat"], official["lon"], hours=48)
-        historical, hourly = await asyncio.gather(historical_task, hourly_task)
+        aqi_task = owm_service.get_aqi_forecast(official["lat"], official["lon"])
+        historical, hourly, aqi_forecast = await asyncio.gather(historical_task, hourly_task, aqi_task)
         ml_predictions, confidence = predict(historical, days=days)
-        response = forecast_service.merge_forecast(official, hourly, ml_predictions, confidence, days)
+        response = forecast_service.merge_forecast(official, hourly, ml_predictions, confidence, days, aqi_forecast=aqi_forecast)
         cache.set_cached(cache_key, response.model_dump())
         return response
     except HTTPException:
@@ -48,4 +49,3 @@ async def get_hourly_forecast(city: str = Query(..., min_length=2)) -> HourlyRes
         raise
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Hourly forecast unavailable: {exc}") from exc
-

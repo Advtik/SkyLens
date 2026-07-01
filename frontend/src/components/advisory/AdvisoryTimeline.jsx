@@ -3,12 +3,21 @@ import { formatDate } from '../../utils/formatters'
 import AdvisoryRiskBar from './AdvisoryRiskBar'
 
 const labels = {
-  attendance_disrupted: 'Attendance',
-  commute_difficult: 'Commute',
-  outdoor_unsafe: 'Outdoor',
+  attendance_disrupted: 'Attendance disruption',
+  commute_difficult: 'Commute difficulty',
+  outdoor_unsafe: 'Outdoor safety',
   heat_stress: 'Heat stress',
-  rain_disruption: 'Rain',
-  weather_severe: 'Severity',
+  rain_disruption: 'Rain disruption',
+  weather_severe: 'Severe weather',
+}
+
+const descriptions = {
+  attendance_disrupted: 'Chance that weather affects regular attendance.',
+  commute_difficult: 'Road and travel discomfort from rain, wind, heat, or visibility.',
+  outdoor_unsafe: 'Outdoor activity risk from heat, UV, wind, rain, or storms.',
+  heat_stress: 'Heat and humidity strain on students and staff.',
+  rain_disruption: 'Rain impact on arrival, dismissal, and outdoor movement.',
+  weather_severe: 'Combined signal for potentially disruptive weather.',
 }
 
 const badgeClass = {
@@ -37,13 +46,18 @@ export default function AdvisoryTimeline() {
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {Object.entries(selected.risk_scores).map(([key, value], index) => (
-          <AdvisoryRiskBar key={key} label={labels[key] || key} value={value} index={index} />
+          <AdvisoryRiskBar key={key} label={labels[key] || key} description={descriptions[key]} value={value} index={index} />
         ))}
       </div>
       <div className="mt-5">
-        <AdvisoryRiskBar label="ML confidence" value={(advisory.ml_confidence || 0) * 100} />
+        <AdvisoryRiskBar label="Model confidence" description="How stable the advisory model is for the current data." value={(advisory.ml_confidence || 0) * 100} />
+        <div className="mt-3 grid gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 sm:grid-cols-4">
+          <span className="rounded-lg bg-emerald-400/10 px-2 py-1 text-emerald-200">0-29 Low</span>
+          <span className="rounded-lg bg-amber-400/10 px-2 py-1 text-amber-100">30-54 Watch</span>
+          <span className="rounded-lg bg-orange-500/10 px-2 py-1 text-orange-100">55-74 Caution</span>
+          <span className="rounded-lg bg-red-500/10 px-2 py-1 text-red-100">75+ High</span>
+        </div>
       </div>
     </div>
   )
 }
-

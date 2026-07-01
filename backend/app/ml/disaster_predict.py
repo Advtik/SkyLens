@@ -20,9 +20,9 @@ def load_disaster_models() -> None:
 
 
 def _risk_level(confidence: float) -> str:
-    if confidence < 55:
-        return "MODERATE"
-    if confidence < 75:
+    if confidence < 60:
+        return "ELEVATED"
+    if confidence < 80:
         return "HIGH"
     return "CRITICAL"
 
@@ -69,7 +69,8 @@ def predict_disaster(forecast_data: dict) -> dict:
             class_index = int(np.argmax(matrix[index]))
             disaster_type = classes[class_index]
             class_confidence = float(matrix[index][class_index] * 100)
-            if disaster_type != "none" and class_confidence >= 45:
+            triggered_features = _explain_features(row)
+            if disaster_type != "none" and (class_confidence >= 65 or (class_confidence >= 55 and triggered_features)):
                 alerts.append(
                     {
                         "date": row["date"],
@@ -77,7 +78,7 @@ def predict_disaster(forecast_data: dict) -> dict:
                         "confidence": round(class_confidence, 1),
                         "risk_level": _risk_level(class_confidence),
                         "proba_breakdown": {cls: round(float(matrix[index][i] * 100), 1) for i, cls in enumerate(classes)},
-                        "triggered_features": _explain_features(row),
+                        "triggered_features": triggered_features,
                     }
                 )
     else:
@@ -85,7 +86,8 @@ def predict_disaster(forecast_data: dict) -> dict:
             breakdown = _fallback_breakdown(row)
             disaster_type = max(["flood", "storm", "heatwave"], key=lambda key: breakdown[key])
             class_confidence = breakdown[disaster_type]
-            if class_confidence >= 45:
+            triggered_features = _explain_features(row)
+            if class_confidence >= 65 or (class_confidence >= 55 and triggered_features):
                 alerts.append(
                     {
                         "date": row["date"],
@@ -93,11 +95,17 @@ def predict_disaster(forecast_data: dict) -> dict:
                         "confidence": round(class_confidence, 1),
                         "risk_level": _risk_level(class_confidence),
                         "proba_breakdown": breakdown,
-                        "triggered_features": _explain_features(row),
+                        "triggered_features": triggered_features,
                     }
                 )
 
-    return {"alerts": alerts[:3], "confidence": round(confidence, 2)}
+    strongest_by_type = {}
+    for alert in alerts:
+        current = strongest_by_type.get(alert["type"])
+        if current is None or alert["confidence"] > current["confidence"]:
+            strongest_by_type[alert["type"]] = alert
+    ranked_alerts = sorted(strongest_by_type.values(), key=lambda alert: alert["confidence"], reverse=True)
+    return {"alerts": ranked_alerts[:3], "confidence": round(confidence, 2)}
 
 
 def detect_anomaly(historical_df) -> float:
@@ -115,4 +123,3 @@ def detect_anomaly(historical_df) -> float:
         return round(float(np.clip((0 - score) * 50, 0, 100)), 1)
     absolute_peak = float(latest.abs().max(axis=1).iloc[0])
     return round(float(np.clip(absolute_peak * 18, 0, 100)), 1)
-

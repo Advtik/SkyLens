@@ -10,7 +10,7 @@ export default function PrecipitationChart() {
   const data = daily.map((day) => ({
     date: formatDate(day.date),
     'Rain mm': day.precipitation_mm,
-    Probability: Math.min(100, Math.round(day.cloud_cover_avg * 0.55 + day.precipitation_mm * 10)),
+    'Rain chance %': day.precipitation_probability ?? Math.min(100, Math.round(day.cloud_cover_avg * 0.35 + day.precipitation_mm * 12)),
   }))
 
   return (
@@ -21,9 +21,8 @@ export default function PrecipitationChart() {
         <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} />
         <Tooltip content={<CustomTooltip />} />
         <Bar dataKey="Rain mm" fill={CHART_COLORS.sky} radius={[8, 8, 0, 0]} />
-        <Line dataKey="Probability" stroke="#F8FAFC" strokeDasharray="6 3" strokeWidth={2} />
+        <Line dataKey="Rain chance %" stroke="#F8FAFC" strokeDasharray="6 3" strokeWidth={2} />
       </ComposedChart>
     </ChartWrapper>
   )
 }
-

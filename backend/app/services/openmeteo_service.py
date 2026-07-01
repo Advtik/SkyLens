@@ -82,7 +82,7 @@ async def get_hourly(lat: float, lon: float, hours: int = 48) -> list[HourlyPoin
     params = {
         "latitude": lat,
         "longitude": lon,
-        "hourly": "temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,cloud_cover,uv_index,weather_code,wind_speed_10m",
+        "hourly": "temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,precipitation_probability,cloud_cover,uv_index,weather_code,wind_speed_10m",
         "forecast_hours": hours,
         "timezone": "auto",
     }
@@ -103,6 +103,7 @@ async def get_hourly(lat: float, lon: float, hours: int = 48) -> list[HourlyPoin
                 humidity=int((hourly.get("relative_humidity_2m") or [0])[index]),
                 wind_speed_ms=round(float((hourly.get("wind_speed_10m") or [0])[index]) / 3.6, 1),
                 precipitation_mm=round(float((hourly.get("precipitation") or [0])[index]), 1),
+                precipitation_probability=int((hourly.get("precipitation_probability") or [0])[index]),
                 cloud_cover_pct=int((hourly.get("cloud_cover") or [0])[index]),
                 uv_index=round(float((hourly.get("uv_index") or [0])[index]), 1),
                 condition_icon=icon,
@@ -126,4 +127,3 @@ async def get_historical(lat: float, lon: float, days: int = 45) -> pd.DataFrame
         response = await client.get(ARCHIVE_URL, params=params)
     response.raise_for_status()
     return pd.DataFrame(response.json().get("daily", {}))
-

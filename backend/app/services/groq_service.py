@@ -258,8 +258,14 @@ def build_voice_context(
                 "condition": day.get("condition"),
                 "temp_max_c": day.get("temp_max_c"),
                 "temp_min_c": day.get("temp_min_c"),
-                "temp_ml_predicted": day.get("temp_ml_predicted"),
+                "temp_ml_max_predicted": day.get("temp_ml_max_predicted") or day.get("temp_ml_predicted"),
+                "temp_ml_min_predicted": day.get("temp_ml_min_predicted") or day.get("temp_ml_predicted"),
                 "precipitation_mm": day.get("precipitation_mm"),
+                "precipitation_probability": day.get("precipitation_probability"),
+                "humidity_avg": day.get("humidity_avg"),
+                "cloud_cover_avg": day.get("cloud_cover_avg"),
+                "uv_max": day.get("uv_max"),
+                "aqi_avg": day.get("aqi_avg"),
                 "rain_probability": day.get("rain_probability"),
             }
             for day in available_forecast[:7]
@@ -278,6 +284,47 @@ def build_voice_context(
 
         "disaster": disaster or {},
     }
+
+
+def _day_answer(day: dict, prefix: str = "Forecast") -> str:
+    rain_chance = day.get("precipitation_probability")
+    rain_text = f"{rain_chance}% rain chance" if rain_chance is not None else f"{day.get('precipitation_mm', 0)}mm rain"
+    return (
+        f"{prefix} for {day.get('date')}: {day.get('condition', 'variable weather')}, "
+        f"{day.get('temp_min_c')}C to {day.get('temp_max_c')}C, {rain_text}, "
+        f"cloud cover near {day.get('cloud_cover_avg', '--')}%."
+    )
+
+
+def _local_weather_answer(clean_query: str, context: dict, matched_forecast: dict | None) -> str | None:
+    forecasts = context.get("forecast", [])
+    first_day = matched_forecast or (forecasts[0] if forecasts else None)
+    advisory_days = (context.get("advisory") or {}).get("days") or []
+    disaster_alerts = (context.get("disaster") or {}).get("alerts") or []
+
+    if any(word in clean_query for word in ["school", "college", "attendance", "safe"]):
+        if advisory_days:
+            day = advisory_days[0]
+            scores = day.get("risk_scores", {})
+            return (
+                f"School/college risk for {day.get('date')} is {day.get('overall_risk', 'UNKNOWN')}. "
+                f"Commute {round(scores.get('commute_difficult', 0))}%, outdoor risk {round(scores.get('outdoor_unsafe', 0))}%, "
+                f"heat stress {round(scores.get('heat_stress', 0))}%."
+            )
+
+    if any(word in clean_query for word in ["disaster", "warning", "alert", "flood", "storm", "heatwave"]):
+        if disaster_alerts:
+            alert = disaster_alerts[0]
+            return (
+                f"{alert.get('type', 'Weather')} risk is {alert.get('risk_level', 'elevated')} for {alert.get('date')} "
+                f"with {alert.get('confidence')}% confidence. Main signals: {', '.join(alert.get('triggered_features') or ['forecast risk pattern'])}."
+            )
+        return "No major disaster warning is active in the current forecast data."
+
+    if first_day and any(word in clean_query for word in ["tomorrow", "forecast", "rain", "temperature", "weather", "future"]):
+        return _day_answer(first_day)
+
+    return None
 
 
 async def answer_voice_query(
@@ -316,7 +363,10 @@ IMPORTANT RULES:
 - Maximum 3-4 lines.
 - Sound natural and conversational.
 - Directly answer the user's question.
-- Use forecast data when available.
+- Use the supplied SkyLens context as the source of truth.
+- Keep numbers consistent with the UI fields in FULL WEATHER CONTEXT.
+- Prefer official forecast values for weather and use ML min/max only as trend guidance.
+- Use advisory and disaster context when the question is about school, college, safety, warnings, floods, storms, or heatwaves.
 - If exact future forecast is unavailable, use:
   - current weather
   - forecast trends
@@ -378,6 +428,15 @@ Answer naturally in under 4 lines.
 
     if text and len(text.strip()) > 10:
         return text.strip()
+
+    local_answer = _local_weather_answer(
+        clean_query,
+        context,
+        matched_forecast,
+    )
+
+    if local_answer:
+        return local_answer
 
     current = context.get(
         "current_weather",

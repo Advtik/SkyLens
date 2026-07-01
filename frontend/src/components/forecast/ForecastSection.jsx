@@ -31,9 +31,9 @@ export default function ForecastSection() {
       <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-sky-300">Forecast analytics</p>
-          <h2 className="mt-1 text-2xl font-bold text-white">Official forecast with ML trend overlay</h2>
+          <h2 className="mt-1 text-2xl font-bold text-white">Forecast data with calibrated ML trend</h2>
         </div>
-        <p className="text-sm text-slate-400">ML confidence {Math.round((mlConfidence || 0) * 100)}%</p>
+        <p className="text-sm text-slate-400">Model confidence {Math.round((mlConfidence || 0) * 100)}%</p>
       </div>
       <ForecastTabs activeTab={activeTab} onChange={setForecastTab} />
       <div className="mt-6">

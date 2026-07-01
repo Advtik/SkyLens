@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_BASE_URL } from './config'
 
 const INTENT_PATTERNS = [
   { pattern: /(?:weather|forecast|temperature|humidity|pressure|wind|aqi|uv|rain)\s+(?:in|for|at|of)\s+([a-zA-Z .'-]+)/i, type: 'weather', cityGroup: 1 },
@@ -34,7 +34,7 @@ function cleanCity(value) {
 }
 
 export const fetchVoiceResponse = async ({ query, city, includeAdvisory = false, includeDisaster = false }) => {
-  const res = await fetch(`${BASE_URL}/api/groq/voice`, {
+  const res = await fetch(`${API_BASE_URL}/api/groq/voice`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, city, include_advisory: includeAdvisory, include_disaster: includeDisaster }),

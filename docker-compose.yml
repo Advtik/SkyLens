@@ -14,7 +14,6 @@ services:
     volumes:
       - ./frontend:/app
     env_file:
-      - ./frontend/.env.local
+      - ./frontend/.env
     depends_on:
       - backend
-

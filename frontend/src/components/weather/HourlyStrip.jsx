@@ -4,6 +4,15 @@ import { useWeatherStore } from '../../store/useWeatherStore'
 import { convertTemp, tempUnitSymbol } from '../../utils/formatters'
 import WeatherIcon from '../common/WeatherIcon'
 
+function precipitationLabel(point) {
+  const amount = Number(point.precipitation_mm || 0)
+  const probability = point.precipitation_probability
+  if (amount > 0 && amount < 0.1) return '<0.1 mm'
+  if (amount >= 0.1) return `${amount.toFixed(amount >= 1 ? 1 : 1)} mm`
+  if (probability >= 20) return `${probability}% rain`
+  return 'No rain'
+}
+
 function HourlyItem({ point, tempUnit }) {
   return (
     <motion.div variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }} className="glass-card min-w-24 rounded-xl p-3 text-center">
@@ -15,7 +24,7 @@ function HourlyItem({ point, tempUnit }) {
         {convertTemp(point.temp_c, tempUnit)}
         {tempUnitSymbol(tempUnit)}
       </p>
-      <p className="text-xs text-slate-400">{point.precipitation_mm} mm</p>
+      <p className="text-xs text-slate-400">{precipitationLabel(point)}</p>
     </motion.div>
   )
 }
@@ -39,4 +48,3 @@ export default function HourlyStrip() {
     </section>
   )
 }
-
